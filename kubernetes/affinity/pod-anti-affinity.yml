@@ -1,0 +1,43 @@
+# Pod anti-affinity tells the scheduler to avoid scheduling pods to specific nodes by an expression of rules.
+# For example, Do not run this pod where a pod with label X with value Y exists. The avoiding method can be to avoid node, host, zone, region or whatever you want.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-affinity
+spec:
+  containers:
+  - name: with-pod-affinity
+    image: registry.k8s.io/pause:2.0
+  affinity:
+    podAffinity:
+    # Pod should go in a zone where there is a pod with label "security=S1"
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: security
+            operator: In
+            values:
+            - S1
+        topologyKey: topology.kubernetes.io/zone
+    # Pod should NOT go in a host where there is a pod with label "app=app-disk"
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - app-disk
+        topologyKey: kubernetes.io/hostname
+    # Pod is preferred to go in a zone where there is a pod with label "security=S2"
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: security
+              operator: In
+              values:
+              - S2
+          topologyKey: topology.kubernetes.io/zone
